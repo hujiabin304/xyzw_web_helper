@@ -9,30 +9,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22 (解决弃用警告)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: npm install
+      - name: 配置国内淘宝npm源(加速10倍)
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm config set disturl https://npmmirror.com/dist
 
-      - name: Build Vue project
+      - name: 安装依赖(解决冲突+超时)
+        run: npm install --legacy-peer-deps --timeout=600000
+
+      - name: 构建Vue前端项目
         run: npm run build
 
-      - name: Install Cordova CLI
-        run: npm install -g cordova
+      - name: 安装Cordova CLI
+        run: npm install -g cordova --registry=https://registry.npmmirror.com
 
-      - name: Create Cordova project & package
+      - name: 创建Cordova项目并打包APK
         run: |
           cordova create app io.github.xyzw "XYZWWebHelper" --web-dir dist
           cp -r dist/* app/www/
           cd app
-          cordova platform add android@12.0.0
+          cordova platform add android@12.0.0 --registry=https://registry.npmmirror.com
           cordova build android --release -- --keystore=none --storePassword=none --password=none --alias=none
 
-      - name: Upload APK
+      - name: 上传APK成品
         uses: actions/upload-artifact@v4
         with:
           name: xyzw-apk
