@@ -1,0 +1,39 @@
+name: Build Web to APK
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Vue project
+        run: npm run build
+
+      - name: Install Cordova CLI
+        run: npm install -g cordova
+
+      - name: Create Cordova project & package
+        run: |
+          cordova create app io.github.xyzw "XYZWWebHelper" --web-dir dist
+          cp -r dist/* app/www/
+          cd app
+          cordova platform add android@12.0.0
+          cordova build android --release -- --keystore=none --storePassword=none --password=none --alias=none
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xyzw-apk
+          path: app/platforms/android/app/build/outputs/apk/release/*.apk
